@@ -8,12 +8,16 @@
 #else
   #if defined(__AVR__)
     #include <avr/io.h>
+  #elif defined(__SAM3X8E__)
+    #include <pwmc.h>
+    #include <component/component_pwm.h>
   #endif
   #include "WProgram.h"
 #endif
 
 #include "AFMotor.h"
 
+Pwm mypwm;
 
 
 static uint8_t latch_state;
@@ -132,8 +136,22 @@ inline void initPWM1(uint8_t freq) {
         // If we are not using PWM for pin 11, then just do digital
         digitalWrite(11, LOW);
     #endif
+#elif defined(__SAM3X8E__)
+    #if 1
+        // It looks to me like the SAM3X8E (the Due MCU) doesn't let us do "real" PWM on 3 of the 4 pins the motor
+        // shield uses.  So just fall back to the timer interrupt method that the arduino core knows how to do.
+        // This means we ignore the frequency. Could fix this by doing our own timer stuff?
+        pinMode(11, OUTPUT);
+        analogWriteResolution(8);
+    #else
+        // If I'm wrong about not being able to get pin 11 as a real PWM output, we would set it up
+        // using these calls, I think? (Don't have the clock or frequency stuff right here.)
+        PWMC_ConfigureClocks(freq, 0, BOARD_MCK);
+        PWMC_ConfigureChannel(&mypwm, 0, 0, 0, 0);
+        PWMC_EnableChannel(&mypwm, 0);
+    #endif
 #else
-   #error "This chip is not supported!"
+    #error "This chip is not supported!"
 #endif
     #if !defined(PIC32_USE_PIN9_FOR_M1_PWM) && !defined(PIC32_USE_PIN10_FOR_M1_PWM)
         pinMode(11, OUTPUT);
@@ -169,6 +187,15 @@ inline void setPWM1(uint8_t s) {
             digitalWrite(11, LOW);
         }
     #endif
+#elif defined(__SAM3X8E__)
+    #if 1
+        // rely on core arduino stuff to do the PWM(ish) work at whatever it's default frequency is
+        analogWrite(11, s);
+    #else
+        // if we can do it the real way, I think it would look like this?
+        PWMC_SetPeriod(&mypwm, 0, 0xFF); // max 8 bit value for duty cycle
+        PWMC_SetDutyCycle(&mypwm, 0, s); // if we add another form (or use a 16bit arg) we could get higher PWM resolution for Due
+    #endif
 #else
    #error "This chip is not supported!"
 #endif
@@ -201,6 +228,18 @@ inline void initPWM2(uint8_t freq) {
     OC1CON = 0x8006;    // OC32 = 0, OCTSEL=0, OCM=6
     OC1RS = 0x0000;
     OC1R = 0x0000;
+#elif defined(__SAM3X8E__)
+    #if 1
+        // It looks to me like the SAM3X8E (the Due MCU) doesn't let us do "real" PWM on 3 of the 4 pins the motor
+        // shield uses.  So just fall back to the timer interrupt method that the arduino core knows how to do.
+        // This means we ignore the frequency. Could fix this by doing our own timer stuff?
+        pinMode(3, OUTPUT);
+        analogWriteResolution(8);
+    #else
+        PWMC_ConfigureClocks(freq, 0, VARIANT_MCK);
+        PWMC_ConfigureChannel(&mypwm, 1, 0, 0, 0);
+        PWMC_EnableChannel(&mypwm, 1);
+    #endif
 #else
    #error "This chip is not supported!"
 #endif
@@ -222,6 +261,12 @@ inline void setPWM2(uint8_t s) {
 #elif defined(__PIC32MX__)
     // Set the OC1 (pin3) PMW duty cycle from 0 to 255
     OC1RS = s;
+#elif defined(__SAM3X8E__)
+    #if 1
+        analogWrite(3, s);
+    #else
+        PWMC_SetDutyCycle(&mypwm, 1, s<<8); // scale 8bit duty cycle to 16bit
+    #endif
 #else
    #error "This chip is not supported!"
 #endif
@@ -255,6 +300,19 @@ inline void initPWM3(uint8_t freq) {
     OC3CON = 0x8006;    // OC32 = 0, OCTSEL=0, OCM=6
     OC3RS = 0x0000;
     OC3R = 0x0000;
+#elif defined(__SAM3X8E__)
+    #if 1
+        // It looks to me like the SAM3X8E (the Due MCU) doesn't let us do "real" PWM on 3 of the 4 pins the motor
+        // shield uses.  So just fall back to the timer interrupt method that the arduino core knows how to do.
+        // This means we ignore the frequency. Could fix this by doing our own timer stuff?
+        // BUT WAIT! pin 6 is one of the real PWM pins; PWML7 to be exact.  Gotta figure this out!
+        pinMode(6, OUTPUT);
+        analogWriteResolution(8);
+    #else
+        PWMC_ConfigureClocks(freq, 0, VARIANT_MCK);
+        PWMC_ConfigureChannel(&mypwm, 2, 0, 0, 0);
+        PWMC_EnableChannel(&mypwm, 2);
+    #endif
 #else
    #error "This chip is not supported!"
 #endif
@@ -275,6 +333,12 @@ inline void setPWM3(uint8_t s) {
 #elif defined(__PIC32MX__)
     // Set the OC3 (pin 6) PMW duty cycle from 0 to 255
     OC3RS = s;
+#elif defined(__SAM3X8E__)
+    #if 1
+        analogWrite(6, s);
+    #else
+        PWMC_SetDutyCycle(&mypwm, 2, s<<8); // scale 8bit duty cycle to 16bit
+    #endif
 #else
    #error "This chip is not supported!"
 #endif
@@ -310,6 +374,18 @@ inline void initPWM4(uint8_t freq) {
     OC2CON = 0x8006;    // OC32 = 0, OCTSEL=0, OCM=6
     OC2RS = 0x0000;
     OC2R = 0x0000;
+#elif defined(__SAM3X8E__)
+    #if 1
+        // It looks to me like the SAM3X8E (the Due MCU) doesn't let us do "real" PWM on 3 of the 4 pins the motor
+        // shield uses.  So just fall back to the timer interrupt method that the arduino core knows how to do.
+        // This means we ignore the frequency. Could fix this by doing our own timer stuff?
+        pinMode(5, OUTPUT);
+        analogWriteResolution(8);
+    #else
+        PWMC_ConfigureClocks(freq, 0, VARIANT_MCK);
+        PWMC_ConfigureChannel(&mypwm, 3, 0, 0, 0);
+        PWMC_EnableChannel(&mypwm, 3);
+    #endif
 #else
    #error "This chip is not supported!"
 #endif
@@ -322,14 +398,20 @@ inline void setPWM4(uint8_t s) {
     defined(__AVR_ATmega88__) || \
     defined(__AVR_ATmega168__) || \
     defined(__AVR_ATmega328P__)
-    // use PWM from timer0A on PB3 (Arduino pin #6)
+    // use PWM from timer0A on PB3 (Arduino pin #5)
     OCR0B = s;
 #elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-    // on arduino mega, pin 6 is now PH3 (OC4A)
+    // on arduino mega, pin 5 is now PH3 (OC4A)
     OCR3A = s;
 #elif defined(__PIC32MX__)
     // Set the OC2 (pin 5) PMW duty cycle from 0 to 255
     OC2RS = s;
+#elif defined(__SAM3X8E__)
+    #if 1
+        analogWrite(5, s);
+    #else
+        PWMC_SetDutyCycle(&mypwm, 3, s);
+    #endif
 #else
    #error "This chip is not supported!"
 #endif

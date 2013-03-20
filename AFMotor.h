@@ -92,6 +92,22 @@
     #define STEPPER1_PWM_RATE   MOTOR12_39KHZ
     #define STEPPER2_PWM_RATE   MOTOR34_39KHZ
     
+#elif defined(__SAM3X8E__)
+
+    #define MICROSTEPS 16
+
+    // FIXME: what do I do here?
+    #define DC_MOTOR_PWM_RATE 1
+    #define STEPPER1_PWM_RATE 1
+    #define STEPPER2_PWM_RATE 1
+
+    #ifndef _BV
+        #define _BV(n) ((1<<n))
+    #endif
+#else
+
+    #error "This chip is not supported!"
+
 #endif
 
 // Bit positions in the 74HCT595 shift register output
